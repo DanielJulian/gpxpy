@@ -1063,7 +1063,8 @@ class GPXTrackSegment:
             return UphillDownhill(0, 0)
 
         elevations = list(map(lambda point: point.elevation, self.points))
-        uphill, downhill = mod_geo.calculate_uphill_downhill(elevations)
+        duration = self.get_duration()
+        uphill, downhill = mod_geo.calculate_uphill_downhill(elevations, duration)
 
         return UphillDownhill(uphill, downhill)
 

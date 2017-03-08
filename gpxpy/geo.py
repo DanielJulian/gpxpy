@@ -127,34 +127,109 @@ def calculate_max_speed(speeds_and_distances):
     return speeds[index]
 
 
-def calculate_uphill_downhill(elevations):
+def calculate_uphill_downhill(elevations, duration):
     if not elevations:
         return 0, 0
 
     size = len(elevations)
 
+    #need at least twenty points to calculate elevation
+    if size < 20:
+        return 0, 0
+
+    #smoothing factor is 40 if we have at least one point every ten seconds and at least 40 points, otherwise 20
+    if duration / size <= 10 and size >= 40:
+        smoothing_factor = 40
+    else:
+        smoothing_factor = 20
+
     def __filter(n):
         current_ele = elevations[n]
         if current_ele is None:
             return False
-        if 0 < n < size - 1:
-            previous_ele = elevations[n-1]
-            next_ele = elevations[n+1]
-            if previous_ele is not None and current_ele is not None and next_ele is not None:
-                return previous_ele*.3 + current_ele*.4 + next_ele*.3
+        if smoothing_factor == 20:
+            if 9 < n < size - 10:
+                previous_ele1 = elevations[n-1]
+                previous_ele2 = elevations[n-2]
+                previous_ele3 = elevations[n-3]
+                previous_ele4 = elevations[n-4]
+                previous_ele5 = elevations[n-5]
+                previous_ele6 = elevations[n-6]
+                previous_ele7 = elevations[n-7]
+                previous_ele8 = elevations[n-8]
+                previous_ele9 = elevations[n-9]
+                next_ele1 = elevations[n+1]
+                next_ele2 = elevations[n+2]
+                next_ele3 = elevations[n+3]
+                next_ele4 = elevations[n+4]
+                next_ele5 = elevations[n+5]
+                next_ele6 = elevations[n+6]
+                next_ele7 = elevations[n+7]
+                next_ele8 = elevations[n+8]
+                next_ele9 = elevations[n+9]
+                if previous_ele1 is not None and previous_ele2 is not None and previous_ele3 is not None and previous_ele4 is not None and previous_ele5 is not None and previous_ele6 is not None and previous_ele7 is not None and previous_ele8 is not None and previous_ele9 is not None and current_ele is not None and next_ele1 is not None and next_ele2 is not None and next_ele3 is not None and next_ele4 is not None and next_ele5 is not None and next_ele6 is not None and next_ele7 is not None and next_ele8 is not None and next_ele9 is not None:
+                    return previous_ele1*.05 + previous_ele2*.05 + previous_ele3*.05 + previous_ele4*.05 + previous_ele5*.05 + previous_ele6*.05 + previous_ele7*.05 + previous_ele8*.05 + previous_ele9*.05 + current_ele*.1 + next_ele1*.05 + next_ele2*.05 + next_ele3*.05 + next_ele4*.05 + next_ele5*.05 + next_ele6*.05 + next_ele7*.05 + next_ele8*.05 + next_ele9*.05
+        else:
+            if 19 < n < size - 20:
+                previous_ele1 = elevations[n-1]
+                previous_ele2 = elevations[n-2]
+                previous_ele3 = elevations[n-3]
+                previous_ele4 = elevations[n-4]
+                previous_ele5 = elevations[n-5]
+                previous_ele6 = elevations[n-6]
+                previous_ele7 = elevations[n-7]
+                previous_ele8 = elevations[n-8]
+                previous_ele9 = elevations[n-9]
+                previous_ele10 = elevations[n-10]
+                previous_ele11 = elevations[n-11]
+                previous_ele12 = elevations[n-12]
+                previous_ele13 = elevations[n-13]
+                previous_ele14 = elevations[n-14]
+                previous_ele15 = elevations[n-15]
+                previous_ele16 = elevations[n-16]
+                previous_ele17 = elevations[n-17]
+                previous_ele18 = elevations[n-18]
+                previous_ele19 = elevations[n-19]
+                next_ele1 = elevations[n+1]
+                next_ele2 = elevations[n+2]
+                next_ele3 = elevations[n+3]
+                next_ele4 = elevations[n+4]
+                next_ele5 = elevations[n+5]
+                next_ele6 = elevations[n+6]
+                next_ele7 = elevations[n+7]
+                next_ele8 = elevations[n+8]
+                next_ele9 = elevations[n+9]
+                next_ele10 = elevations[n+10]
+                next_ele11 = elevations[n+11]
+                next_ele12 = elevations[n+12]
+                next_ele13 = elevations[n+13]
+                next_ele14 = elevations[n+14]
+                next_ele15 = elevations[n+15]
+                next_ele16 = elevations[n+16]
+                next_ele17 = elevations[n+17]
+                next_ele18 = elevations[n+18]
+                next_ele19 = elevations[n+19]
+                if previous_ele1 is not None and previous_ele2 is not None and previous_ele3 is not None and previous_ele4 is not None and previous_ele5 is not None and previous_ele6 is not None and previous_ele7 is not None and previous_ele8 is not None and previous_ele9 is not None and previous_ele10 is not None and previous_ele11 is not None and previous_ele12 is not None and previous_ele13 is not None and previous_ele14 is not None and previous_ele15 is not None and previous_ele16 is not None and previous_ele17 is not None and previous_ele18 is not None and previous_ele19 is not None and current_ele is not None and next_ele1 is not None and next_ele2 is not None and next_ele3 is not None and next_ele4 is not None and next_ele5 is not None and next_ele6 is not None and next_ele7 is not None and next_ele8 is not None and next_ele9 is not None and next_ele10 is not None and next_ele11 is not None and next_ele12 is not None and next_ele13 is not None and next_ele14 is not None and next_ele15 is not None and next_ele16 is not None and next_ele17 is not None and next_ele18 is not None and next_ele19 is not None:
+                    return previous_ele1*.025 + previous_ele2*.025 + previous_ele3*.025 + previous_ele4*.025 + previous_ele5*.025 + previous_ele6*.025 + previous_ele7*.025 + previous_ele8*.025 + previous_ele9*.025 + previous_ele10*.025 + previous_ele11*.025 + previous_ele12*.025 + previous_ele13*.025 + previous_ele14*.025 + previous_ele15*.025 + previous_ele16*.025 + previous_ele17*.025 + previous_ele18*.025 + previous_ele19*.025 + current_ele*.05 + next_ele1*.025 + next_ele2*.025 + next_ele3*.025 + next_ele4*.025 + next_ele5*.025 + next_ele6*.025 + next_ele7*.025 + next_ele8*.025 + next_ele9*.025 + next_ele10*.025 + next_ele11*.025 + next_ele12*.025 + next_ele13*.025 + next_ele14*.025 + next_ele15*.025 + next_ele16*.025 + next_ele17*.025 + next_ele18*.025 + next_ele19*.025
         return current_ele
 
     smoothed_elevations = list(map(__filter, range(size)))
 
-    uphill, downhill = 0., 0.
+    uphill, downhill, uphill_trend, downhill_trend = 0., 0., 0., 0.
 
     for n, elevation in enumerate(smoothed_elevations):
         if n > 0 and elevation is not None and smoothed_elevations is not None:
             d = elevation - smoothed_elevations[n-1]
             if d > 0:
-                uphill += d
+                downhill_trend = 0
+                uphill_trend += d
+                if uphill_trend > 6:
+                    uphill += d
             else:
-                downhill -= d
+                uphill_trend = 0
+                downhill_trend -= d
+                if downhill_trend < 6:
+                    downhill -= d
 
     return uphill, downhill
 
