@@ -136,6 +136,10 @@ def calculate_uphill_downhill(elevations, duration):
     #need at least twenty points to calculate elevation
     if size < 20:
         return 0, 0
+        
+    #did we get duration?
+    if not duration:
+        duration = 0
 
     #smoothing factor is 40 if we have at least one point every ten seconds and at least 40 points, otherwise 20
     if duration / size <= 10 and size >= 40:
