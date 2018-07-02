@@ -428,6 +428,139 @@ class GPXRoute:
         for route_point in self.points:
             route_point.move(location_delta)
 
+    def get_duration(self):
+        """
+        Calculates duration for route
+
+        Returns
+        -------
+        duration: float
+            Duration in seconds
+        """
+        if not self.points or len(self.points) < 2:
+            return 0
+
+        # Search for start:
+        first = self.points[0]
+        if not first.time:
+            first = self.points[1]
+
+        last = self.points[-1]
+        if not last.time:
+            last = self.points[-2]
+
+        if not last.time or not first.time:
+            mod_logging.debug('Can\'t find time')
+            return None
+
+        if last.time < first.time:
+            mod_logging.debug('Not enough time data')
+            return None
+
+        return mod_utils.total_seconds(last.time - first.time)
+
+    def get_uphill_downhill(self):
+        """
+        Calculates the uphill and downhill elevation climbs for the route. If elevation for some points is not found those are simply
+        ignored.
+
+        Returns
+        -------
+        uphill_downhill: UphillDownhill named tuple
+            uphill: float
+                Uphill elevation climbs in meters
+            downhill: float
+                Downhill elevation descent in meters
+        """
+        if not self.points:
+            return UphillDownhill(0, 0)
+
+        elevations = list(map(lambda point: point.elevation, self.points))
+        duration = self.get_duration()
+        uphill, downhill = mod_geo.calculate_uphill_downhill(elevations, duration)
+
+        return UphillDownhill(uphill, downhill)
+
+    def get_moving_data(self, stopped_speed_threshold=None):
+        """
+        Return a tuple of (moving_time, stopped_time, moving_distance,
+        stopped_distance, max_speed) that may be used for detecting the time
+        stopped, and max speed. Not that those values are not absolutely true,
+        because the "stopped" or "moving" information aren't saved in the segment.
+
+        Because of errors in the GPS recording, it may be good to calculate
+        them on a reduced and smoothed version of the route.
+
+        Parameters
+        ----------
+        stopped_speed_threshold : float
+            speeds (km/h) below this threshold are treated as if having no
+            movement. Default is 1 km/h.
+
+        Returns
+        ----------
+        moving_data : MovingData : named tuple
+            moving_time : float
+                time (seconds) of segment in which movement was occuring
+            stopped_time : float
+                time (seconds) of segment in which no movement was occuring
+            stopped_distance : float
+                distance (meters) travelled during stopped times
+            moving_distance : float
+                distance (meters) travelled during moving times
+            max_speed : float
+                Maximum speed (m/s) during the route.
+        """
+        if not stopped_speed_threshold:
+            stopped_speed_threshold = DEFAULT_STOPPED_SPEED_THRESHOLD
+
+        moving_time = 0.
+        stopped_time = 0.
+
+        moving_distance = 0.
+        stopped_distance = 0.
+
+        speeds_and_distances = []
+
+        for i in range(1, len(self.points)):
+
+            previous = self.points[i - 1]
+            point = self.points[i]
+
+            # Won't compute max_speed for first and last because of common GPS
+            # recording errors, and because smoothing don't work well for those
+            # points:
+            if point.time and previous.time:
+                timedelta = point.time - previous.time
+
+                if point.elevation and previous.elevation:
+                    distance = point.distance_3d(previous)
+                else:
+                    distance = point.distance_2d(previous)
+
+                seconds = mod_utils.total_seconds(timedelta)
+                speed_kmh = 0
+                if seconds > 0:
+                    # TODO: compute treshold in m/s instead this to kmh every time:
+                    speed_kmh = (distance / 1000.) / (mod_utils.total_seconds(timedelta) / 60. ** 2)
+
+                #print speed, stopped_speed_threshold
+                if speed_kmh <= stopped_speed_threshold:
+                    stopped_time += mod_utils.total_seconds(timedelta)
+                    stopped_distance += distance
+                else:
+                    moving_time += mod_utils.total_seconds(timedelta)
+                    moving_distance += distance
+
+                    if distance and moving_time:
+                        speeds_and_distances.append((distance / mod_utils.total_seconds(timedelta), distance, ))
+
+        max_speed = None
+        if speeds_and_distances:
+            max_speed = mod_geo.calculate_max_speed(speeds_and_distances)
+
+        return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
+
     def __hash__(self):
         return mod_utils.hash_object(self, self.__slots__)
 
@@ -2155,15 +2288,26 @@ class GPX:
 
         max_speed = 0.
 
-        for track in self.tracks:
-            track_moving_time, track_stopped_time, track_moving_distance, track_stopped_distance, track_max_speed = track.get_moving_data(stopped_speed_threshold)
-            moving_time += track_moving_time
-            stopped_time += track_stopped_time
-            moving_distance += track_moving_distance
-            stopped_distance += track_stopped_distance
+        if self.tracks:
+            for track in self.tracks:
+                track_moving_time, track_stopped_time, track_moving_distance, track_stopped_distance, track_max_speed = track.get_moving_data(stopped_speed_threshold)
+                moving_time += track_moving_time
+                stopped_time += track_stopped_time
+                moving_distance += track_moving_distance
+                stopped_distance += track_stopped_distance
 
-            if track_max_speed > max_speed:
-                max_speed = track_max_speed
+                if track_max_speed > max_speed:
+                    max_speed = track_max_speed
+        elif self.routes:
+            for route in self.routes:
+                route_moving_time, route_stopped_time, route_moving_distance, route_stopped_distance, route_max_speed = route.get_moving_data(stopped_speed_threshold)
+                moving_time += route_moving_time
+                stopped_time += route_stopped_time
+                moving_distance += route_moving_distance
+                stopped_distance += route_stopped_distance
+
+                if route_max_speed > max_speed:
+                    max_speed = route_max_speed
 
         return MovingData(moving_time, stopped_time, moving_distance, stopped_distance, max_speed)
 
@@ -2198,10 +2342,16 @@ class GPX:
             Length returned in meters
         """
         result = 0
-        for track in self.tracks:
-            length = track.length_2d()
-            if length or length == 0:
-                result += length
+        if self.tracks:
+            for track in self.tracks:
+                length = track.length_2d()
+                if length or length == 0:
+                    result += length
+        elif self.routes:
+            for route in self.routes:
+                length = route.length()
+                if length or length == 0:
+                    result += length
         return result
 
     def length_3d(self):
@@ -2296,17 +2446,24 @@ class GPX:
             downhill: float
                 Downhill elevation descent in meters
         """
-        if not self.tracks:
+        if not self.tracks and not self.routes:
             return UphillDownhill(0, 0)
 
         uphill = 0
         downhill = 0
 
-        for track in self.tracks:
-            current_uphill, current_downhill = track.get_uphill_downhill()
+        if self.tracks:
+            for track in self.tracks:
+                current_uphill, current_downhill = track.get_uphill_downhill()
 
-            uphill += current_uphill
-            downhill += current_downhill
+                uphill += current_uphill
+                downhill += current_downhill
+        elif self.routes:
+            for route in self.routes:
+                current_uphill, current_downhill = route.get_uphill_downhill()
+
+                uphill += current_uphill
+                downhill += current_downhill
 
         return UphillDownhill(uphill, downhill)
 
