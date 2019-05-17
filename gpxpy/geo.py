@@ -235,6 +235,8 @@ def calculate_uphill_downhill(elevations, duration):
                 if downhill_trend < 6:
                     downhill += d
 
+    downhill = downhill * -1
+
     return uphill, downhill
 
 
