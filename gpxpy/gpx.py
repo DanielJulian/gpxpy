@@ -531,7 +531,10 @@ class GPXRoute:
             # recording errors, and because smoothing don't work well for those
             # points:
             if point.time and previous.time:
-                timedelta = point.time - previous.time
+                if (previous.time > point.time):
+                    timedelta = previous.time - point.time
+                else:
+                    timedelta = point.time - previous.time
 
                 if point.elevation and previous.elevation:
                     distance = point.distance_3d(previous)
@@ -937,7 +940,10 @@ class GPXTrackSegment:
             # recording errors, and because smoothing don't work well for those
             # points:
             if point.time and previous.time:
-                timedelta = point.time - previous.time
+                if (previous.time > point.time):
+                    timedelta = previous.time - point.time
+                else:
+                    timedelta = point.time - previous.time
 
                 if point.elevation and previous.elevation:
                     distance = point.distance_3d(previous)
